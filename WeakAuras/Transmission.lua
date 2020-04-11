@@ -350,6 +350,7 @@ function ShowTooltip(content)
 end
 
 local Compresser = LibStub:GetLibrary("LibCompress");
+local LibDeflate = LibStub:GetLibrary("LibDeflate")
 local Encoder = Compresser:GetAddonEncodeTable()
 local Serializer = LibStub:GetLibrary("AceSerializer-3.0");
 local Comm = LibStub:GetLibrary("AceComm-3.0");
@@ -439,16 +440,31 @@ function TableToString(inTable, forChat)
 end
 
 function StringToTable(inString, fromChat)
-  local decoded;
+  -- if gsub strips off a ! at the beginning then we know that this is not a legacy encoding
+  local encoded, usesDeflate = inString:gsub("^%!", "")
+  local decoded
   if(fromChat) then
-    decoded = decodeB64(inString);
+    if usesDeflate == 1 then
+      decoded = LibDeflate:DecodeForPrint(encoded)
+    else
+      decoded = decodeB64(encoded)
+    end
   else
-    decoded = Encoder:Decode(inString);
+    decoded = LibDeflate:DecodeForWoWAddonChannel(encoded)
   end
 
-  local decompressed, errorMsg = Compresser:Decompress(decoded);
+  if not decoded then
+    return "Error decoding."
+  end
+
+  local decompressed, errorMsg = nil, "unknown compression method"
+  if usesDeflate == 1 then
+    decompressed = LibDeflate:DecompressDeflate(decoded)
+  else
+    decompressed, errorMsg = Compresser:Decompress(decoded)
+  end
   if not(decompressed) then
-    return "Error decompressing: "..errorMsg;
+    return "Error decompressing: " .. errorMsg
   end
 
   local success, deserialized = Serializer:Deserialize(decompressed);

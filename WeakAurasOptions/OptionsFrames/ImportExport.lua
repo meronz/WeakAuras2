@@ -73,8 +73,8 @@ local function ConstructImportExport(frame)
         if (#pasted > 20) then
           WeakAuras.ImportString(pasted);
           input:SetLabel(L["Processed %i chars"]:format(i));
-          input.editBox:SetMaxBytes(2500);
-          input.editBox:SetText(strsub(pasted, 1, 2500));
+          input.editBox:SetMaxBytes(9999);
+          input.editBox:SetText(strsub(pasted, 1, 9999));
         end
       end
 
